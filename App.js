@@ -6,15 +6,16 @@ import {
   Dimensions,
   TouchableOpacity,
 } from 'react-native';
-import { KeepAwake, Camera, Permissions } from 'expo';
+import { KeepAwake, Camera, Permissions, Gyroscope } from 'expo';
 import { RNS3 } from 'react-native-aws3';
 import { STORE_URL, STORE_KEY } from 'react-native-dotenv';
 
-KeepAwake.activate();
+KeepAwake.deactivate();
 
 export default class App extends React.Component {
   state = {
     hasCameraPermission: null,
+    capturing: false,
   };
   async componentWillMount() {
     const { status } = await Permissions.askAsync(Permissions.CAMERA);
@@ -49,6 +50,18 @@ export default class App extends React.Component {
     }
   };
 
+  toggle = () => {
+    if (this.state.capturing) {
+      KeepAwake.deactivate();
+      clearInterval(this.snapInterval);
+      this.setState({ capturing: false });
+    } else {
+      KeepAwake.activate();
+      this.snapInterval = setInterval(this.snap, 5000);
+      this.setState({ capturing: true });
+    }
+  };
+
   render() {
     const { hasCameraPermission } = this.state;
     if (hasCameraPermission === null) {
@@ -74,15 +87,19 @@ export default class App extends React.Component {
             >
               <TouchableOpacity
                 style={{
-                  width: '30%',
+                  width: '40%',
+                  height: 50,
                   alignSelf: 'flex-end',
                   alignItems: 'center',
-                  backgroundColor: '#fff',
+                  justifyContent: 'center',
+                  backgroundColor: this.state.capturing ? '#f00' : '#0f0',
                   borderRadius: 4,
                 }}
-                onPress={this.snap}
+                onPress={this.toggle}
               >
-                <Text style={{ fontSize: 18, marginBottom: 10 }}>Capture</Text>
+                <Text style={{ fontSize: 18, marginBottom: 10 }}>
+                  {this.state.capturing ? 'Stop' : 'Start'} Capturing
+                </Text>
               </TouchableOpacity>
             </View>
           </Camera>

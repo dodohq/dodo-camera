@@ -1,5 +1,15 @@
 {
   "expo": {
-    "sdkVersion": "22.0.0"
+    "sdkVersion": "22.0.0",
+    "name": "DodoCam",
+    "icon": "./logo.png",
+    "version": "1.0.0",
+    "slug": "dodo-camera",
+    "ios": {
+      "bundleIdentifier": "com.dodohq.dodocam"
+    },
+    "android": {
+      "package": "com.dodohq.dodocam"
+    }
   }
 }
