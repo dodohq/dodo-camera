@@ -6,20 +6,16 @@ import {
   Dimensions,
   TouchableOpacity,
 } from 'react-native';
-import { KeepAwake, Camera, Permissions } from 'expo';
+import { KeepAwake, Camera, Permissions, Gyroscope } from 'expo';
 import { RNS3 } from 'react-native-aws3';
+import { STORE_URL, STORE_KEY } from 'react-native-dotenv';
 
-KeepAwake.activate();
-const AWS_OPTIONS = {
-  bucket: 'dodo-test-bucket',
-  region: 'ap-southeast-1',
-  accessKey: 'AKIAJ65KQ7YMZKWOORVQ',
-  secretKey: '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',
-};
+KeepAwake.deactivate();
 
 export default class App extends React.Component {
   state = {
     hasCameraPermission: null,
+    capturing: false,
   };
   async componentWillMount() {
     const { status } = await Permissions.askAsync(Permissions.CAMERA);
@@ -28,20 +24,41 @@ export default class App extends React.Component {
 
   snap = async () => {
     if (this.camera) {
-      console.log('hello');
       const photo = await this.camera.takePictureAsync();
       const photoExt = /\.[a-z]+$/i.exec(photo.uri)[0].substring(1);
-      const file = {
+
+      const formData = new FormData();
+      formData.append('filetype', photoExt);
+      formData.append('image', {
         uri: photo.uri,
         name: `${Date.now()}.${photoExt}`,
-        type: `image/${photoExt}`,
-      };
+        type: 'multipart/form-data',
+      });
+
       try {
-        const res = await RNS3.put(file, AWS_OPTIONS);
+        const res = await fetch(STORE_URL, {
+          method: 'POST',
+          headers: {
+            Authorization: STORE_KEY,
+          },
+          body: formData,
+        });
         console.log(res);
       } catch (e) {
         console.log(e);
       }
+    }
+  };
+
+  toggle = () => {
+    if (this.state.capturing) {
+      KeepAwake.deactivate();
+      clearInterval(this.snapInterval);
+      this.setState({ capturing: false });
+    } else {
+      KeepAwake.activate();
+      this.snapInterval = setInterval(this.snap, 5000);
+      this.setState({ capturing: true });
     }
   };
 
@@ -70,15 +87,19 @@ export default class App extends React.Component {
             >
               <TouchableOpacity
                 style={{
-                  width: '30%',
+                  width: '40%',
+                  height: 50,
                   alignSelf: 'flex-end',
                   alignItems: 'center',
-                  backgroundColor: '#fff',
+                  justifyContent: 'center',
+                  backgroundColor: this.state.capturing ? '#f00' : '#0f0',
                   borderRadius: 4,
                 }}
-                onPress={this.snap}
+                onPress={this.toggle}
               >
-                <Text style={{ fontSize: 18, marginBottom: 10 }}>Capture</Text>
+                <Text style={{ fontSize: 18, marginBottom: 10 }}>
+                  {this.state.capturing ? 'Stop' : 'Start'} Capturing
+                </Text>
               </TouchableOpacity>
             </View>
           </Camera>
