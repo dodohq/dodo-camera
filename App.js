@@ -8,14 +8,9 @@ import {
 } from 'react-native';
 import { KeepAwake, Camera, Permissions } from 'expo';
 import { RNS3 } from 'react-native-aws3';
+import { STORE_URL, STORE_KEY } from 'react-native-dotenv';
 
 KeepAwake.activate();
-const AWS_OPTIONS = {
-  bucket: 'dodo-test-bucket',
-  region: 'ap-southeast-1',
-  accessKey: 'AKIAJ65KQ7YMZKWOORVQ',
-  secretKey: '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',
-};
 
 export default class App extends React.Component {
   state = {
@@ -28,16 +23,25 @@ export default class App extends React.Component {
 
   snap = async () => {
     if (this.camera) {
-      console.log('hello');
       const photo = await this.camera.takePictureAsync();
       const photoExt = /\.[a-z]+$/i.exec(photo.uri)[0].substring(1);
-      const file = {
+
+      const formData = new FormData();
+      formData.append('filetype', photoExt);
+      formData.append('image', {
         uri: photo.uri,
         name: `${Date.now()}.${photoExt}`,
-        type: `image/${photoExt}`,
-      };
+        type: 'multipart/form-data',
+      });
+
       try {
-        const res = await RNS3.put(file, AWS_OPTIONS);
+        const res = await fetch(STORE_URL, {
+          method: 'POST',
+          headers: {
+            Authorization: STORE_KEY,
+          },
+          body: formData,
+        });
         console.log(res);
       } catch (e) {
         console.log(e);
