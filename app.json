@@ -1,6 +1,6 @@
 {
   "expo": {
-    "sdkVersion": "22.0.0",
+    "sdkVersion": "25.0.0",
     "name": "DodoCam",
     "icon": "./logo.png",
     "version": "1.0.0",
